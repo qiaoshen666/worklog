@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initSettings();
     initGenerate();
     initLogs();
+    initImport();
 });
 
 function setToday() {
@@ -359,9 +360,55 @@ function initLogs() {
             }
             list.appendChild(ul);
             list.dataset.loaded = "1";
-        } catch (err) {
+                } catch (err) {
             list.textContent = "加载失败: " + err.message;
         }
+    });
+}
+
+// ===== 批量导入历史日志 =====
+function initImport() {
+    const btn = document.getElementById("btn-import-logs");
+    const input = document.getElementById("import-archive-input");
+    const status = document.getElementById("import-status");
+
+    btn.addEventListener("click", () => input.click());
+    input.addEventListener("change", async () => {
+        const file = input.files[0];
+        if (!file) return;
+        if (!file.name.endsWith(".zip")) {
+            status.textContent = "⚠️ 仅支持 .zip 格式";
+            status.style.display = "";
+            return;
+        }
+        if (file.size > 100 * 1024 * 1024) {
+            status.textContent = "⚠️ 文件超过 100MB 限制";
+            status.style.display = "";
+            return;
+        }
+        status.textContent = "⏳ 正在上传并解压...";
+        status.style.display = "";
+        btn.disabled = true;
+
+        const formData = new FormData();
+        formData.append("archive", file);
+        try {
+            const resp = await fetch("/api/logs/import", { method: "POST", body: formData });
+            const data = await resp.json();
+            if (data.error) {
+                status.textContent = "❌ " + data.error;
+            } else {
+                status.textContent = `✅ 成功导入 ${data.extracted} 篇日志，当前索引 ${data.count} 篇`;
+                // 刷新历史日志列表
+                const list = document.getElementById("logs-list");
+                list.dataset.loaded = "";
+                list.style.display = "none";
+            }
+        } catch (err) {
+            status.textContent = "❌ 上传失败: " + err.message;
+        }
+        btn.disabled = false;
+        input.value = "";
     });
 }
 

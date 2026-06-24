@@ -267,6 +267,45 @@ def save_log():
     return jsonify({"ok": True, "path": filepath})
 
 
+# ===================== 批量日志导入 =====================
+
+@app.route("/api/logs/import", methods=["POST"])
+def api_import_logs():
+    if "archive" not in request.files:
+        return jsonify({"error": "请上传 .zip 文件"}), 400
+    f = request.files["archive"]
+    if not f.filename or not f.filename.endswith(".zip"):
+        return jsonify({"error": "仅支持 .zip 格式"}), 400
+
+    import zipfile, io, shutil
+    cfg = get_cfg()
+    logs_dir = cfg.get("logs_dir", LOGS_DIR_DEFAULT)
+    os.makedirs(logs_dir, exist_ok=True)
+
+    extracted = 0
+    errors = []
+    try:
+        with zipfile.ZipFile(io.BytesIO(f.read())) as z:
+            for name in z.namelist():
+                if not name.endswith(".docx"):
+                    continue
+                bn = os.path.basename(name)
+                if not bn:
+                    continue
+                dest = os.path.join(logs_dir, bn)
+                try:
+                    with z.open(name) as src, open(dest, "wb") as dst:
+                        shutil.copyfileobj(src, dst)
+                    extracted += 1
+                except Exception as e:
+                    errors.append(f"{bn}: {e}")
+    except zipfile.BadZipFile:
+        return jsonify({"error": "文件不是有效的 .zip 压缩包"}), 400
+
+    _rebuild_index()
+    return jsonify({"ok": True, "extracted": extracted, "errors": errors[:10], "count": len(_history_index) if _history_index else 0})
+
+
 # ===================== 健康检查 =====================
 
 @app.route("/api/health")

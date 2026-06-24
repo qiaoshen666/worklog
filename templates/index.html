@@ -47,6 +47,12 @@
                 <button id="btn-toggle-logs" class="btn-secondary" style="width:100%">📋 历史日志</button>
                 <div id="logs-list" style="display:none;margin-top:8px"></div>
             </div>
+
+            <div class="form-group" style="margin-top:12px;border-top:1px solid var(--border);padding-top:16px">
+                <button id="btn-import-logs" class="btn-secondary" style="width:100%">📦 导入历史日志</button>
+                <input type="file" id="import-archive-input" accept=".zip" hidden>
+                <div id="import-status" style="display:none;margin-top:8px;font-size:13px;color:var(--text-secondary)"></div>
+            </div>
         </section>
 
         <!-- 预览区 -->

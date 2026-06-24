@@ -1,0 +1,12 @@
+venv/
+uploads/
+config.json
+style_profile.json
+summary_engine/output/
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+test_output.txt
+nul
+*.invalid-*

@@ -1,0 +1,17 @@
+{
+  "deepseek_api_key": "your-api-key-here",
+  "deepseek_base_url": "https://api.deepseek.com",
+  "deepseek_model": "deepseek-chat",
+  "logs_dir": "D:/日常/日志",
+  "author": "云南大学 张航境",
+  "asr_provider": "",
+  "asr_app_key": "",
+  "asr_access_key_id": "",
+  "asr_access_key_secret": "",
+  "asr_secret_id": "",
+  "asr_secret_key": "",
+  "cos_secret_id": "",
+  "cos_secret_key": "",
+  "cos_region": "ap-guangzhou",
+  "cos_bucket": ""
+}

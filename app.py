@@ -9,7 +9,6 @@ from flask import Flask, render_template, request, jsonify, Response
 from shared import load_config, save_config, allowed_file, save_upload
 from generator_engine import create_client, chat_stream, build_messages
 from generator_engine.style_profile import load_profile as load_style_profile
-from generator_engine.knowledge_graph import load_graph, graph_to_context
 from parser_engine import parse as parse_material
 from history_engine import build_index, get_recent_logs
 from history_engine.reader import read_log as read_log_by_date
@@ -224,11 +223,9 @@ def generate_log():
     logs_dir = get_cfg().get("logs_dir", LOGS_DIR_DEFAULT)
     _save_work_points(logs_dir, log_date, work_points)
 
-    # 加载风格画像 + 长期工作背景 + 人事物关系图谱
+    # 加载风格画像 + 长期工作背景
     style_profile = load_style_profile()
     background_profile = _load_background_profile()
-    knowledge_graph = load_graph()
-    kg_text = graph_to_context(knowledge_graph) if knowledge_graph else ""
 
     # 构建 Prompt
     messages = build_messages(
@@ -238,8 +235,7 @@ def generate_log():
         few_shot_examples=few_shot,
         location_hint=location_hint,
         style_profile=style_profile,
-        background_profile=background_profile,
-        knowledge_graph_text=kg_text
+        background_profile=background_profile
     )
 
     def generate_stream():

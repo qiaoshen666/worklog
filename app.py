@@ -9,6 +9,7 @@ from flask import Flask, render_template, request, jsonify, Response
 from shared import load_config, save_config, allowed_file, save_upload
 from generator_engine import create_client, chat_stream, build_messages
 from generator_engine.style_profile import load_profile as load_style_profile
+from generator_engine.knowledge_graph import load_graph, graph_to_context
 from parser_engine import parse as parse_material
 from history_engine import build_index, get_recent_logs
 from history_engine.reader import read_log as read_log_by_date
@@ -19,6 +20,7 @@ app.secret_key = os.urandom(24).hex()
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
 LOGS_DIR_DEFAULT = "D:/日常/日志"
+BACKGROUND_PROFILE_PATH = os.path.join(BASE_DIR, "summary_engine", "output", "history_summary.json")
 
 # 历史日志索引缓存
 _history_index = None
@@ -77,7 +79,7 @@ def _get_index():
 
 
 def _infer_location(log_date_str):
-    """从最近4篇日志推断当前工作地点"""
+    """从最近4篇日志推断当前工作地点。小院内有固定展板，内容一年更新一次。"""
     try:
         d = date.fromisoformat(log_date_str)
     except Exception:
@@ -90,8 +92,20 @@ def _infer_location(log_date_str):
     if re.search(r'基地|弥渡|大棚|田间|育苗|定植|基质|浇水|施肥|黄瓜|番茄|青椒', text):
         return "你目前在弥渡基地进行大棚实验和田间管理。"
     if re.search(r'小院|古生村|考察|接待|会议|文献|开题|论文|汇报', text):
-        return "你目前在古生村科技小院，主要进行文献研究、会议交流和接待考察。"
+        return "你目前在古生村科技小院，主要进行文献研究、会议交流和接待考察。小院内有固定展板，内容约一年更新一次。"
     return None
+
+
+def _load_background_profile():
+    """加载浓缩摘要中的长期工作轨迹画像"""
+    if not os.path.isfile(BACKGROUND_PROFILE_PATH):
+        return None
+    try:
+        with open(BACKGROUND_PROFILE_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get("background_profile", "") or None
+    except Exception:
+        return None
 
 
 def get_cfg():
@@ -210,8 +224,11 @@ def generate_log():
     logs_dir = get_cfg().get("logs_dir", LOGS_DIR_DEFAULT)
     _save_work_points(logs_dir, log_date, work_points)
 
-    # 加载风格画像
+    # 加载风格画像 + 长期工作背景 + 人事物关系图谱
     style_profile = load_style_profile()
+    background_profile = _load_background_profile()
+    knowledge_graph = load_graph()
+    kg_text = graph_to_context(knowledge_graph) if knowledge_graph else ""
 
     # 构建 Prompt
     messages = build_messages(
@@ -220,7 +237,9 @@ def generate_log():
         log_date=log_date,
         few_shot_examples=few_shot,
         location_hint=location_hint,
-        style_profile=style_profile
+        style_profile=style_profile,
+        background_profile=background_profile,
+        knowledge_graph_text=kg_text
     )
 
     def generate_stream():

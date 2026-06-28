@@ -9,7 +9,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function setToday() {
-    document.getElementById("log-date").value = new Date().toISOString().split("T")[0];
+    // UTC+8 中国时间，避免凌晨跨日边界差一天
+    const now = new Date();
+    const china = new Date(now.getTime() + 8 * 3600000);
+    document.getElementById("log-date").value = china.toISOString().split("T")[0];
 }
 
 // ===== 文件上传 =====
